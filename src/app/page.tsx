@@ -1,9 +1,9 @@
-import { Button } from "@/components/ui/button";
 
-const Page = () =>{
+const Page =  () =>{
+
   return(
     <div>
-      <Button>Click me</Button>
+      <h1>Hello World</h1>
     </div>
   )
 }
