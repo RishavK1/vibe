@@ -6,9 +6,12 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "e2b": "e2b"
   },
   "dependencies": {
+    "@e2b/cli": "^2.3.3",
+    "@e2b/code-interpreter": "^1.5.1",
     "@hookform/resolvers": "^5.2.2",
     "@inngest/agent-kit": "^0.8.3",
     "@prisma/client": "^6.10.1",
