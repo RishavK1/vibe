@@ -16,17 +16,23 @@ export const MessagesContainer = ({ projectId, activeFragment, setActiveFragment
     const trpc = useTRPC();
 
     const bottonRef = useRef<HTMLDivElement>(null);
+    const lastAssistantMessageIdRef = useRef<string | null>(null);
     const { data: messages } = useSuspenseQuery(trpc.messages.getMany.queryOptions({
         projectId: projectId,
     },{
         refetchInterval: 5000, // 5 seconds todo
     }));
     useEffect(() => {
-        const lastAssistantMessageWithFragment = messages.findLast(
-            (message) => message.role === "ASSISTANT" && !!message.fragments,
-        )
-        if (lastAssistantMessageWithFragment) {
-            setActiveFragment(lastAssistantMessageWithFragment.fragments);
+        const lastAssistantMessage = messages.findLast(
+            (message) => message.role === "ASSISTANT"
+        );
+
+        if(
+            lastAssistantMessage?.fragments &&
+            lastAssistantMessage.id !== lastAssistantMessageIdRef.current
+        ){
+            setActiveFragment(lastAssistantMessage.fragments);
+            lastAssistantMessageIdRef.current = lastAssistantMessage.id;
         }
     }, [messages, setActiveFragment]);
 
