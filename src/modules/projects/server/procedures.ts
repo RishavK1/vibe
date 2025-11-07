@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import {  createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import z from "zod";
 import { TRPCError } from "@trpc/server";
+import { consumeCredits } from "@/lib/usage";
 
 export const projectsRouter = createTRPCRouter({
 getOne : protectedProcedure
@@ -51,6 +52,23 @@ getOne : protectedProcedure
             })
         )
         .mutation(async ({ input, ctx }) => {
+
+            try {
+                await consumeCredits();
+
+            } catch (error) {
+                if (error instanceof Error) {
+                    throw new TRPCError({
+                        code: "BAD_REQUEST",
+                        message: error.message,
+                    });
+                }else{
+                    throw new TRPCError({
+                        code: "TOO_MANY_REQUESTS",
+                        message: "You have reached the maximum number of requests. Please upgrade to a paid plan.",
+                    })
+                }
+            }
 
             const createdProject = await prisma.project.create({
                 data :{
