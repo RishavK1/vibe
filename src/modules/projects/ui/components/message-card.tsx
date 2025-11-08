@@ -3,7 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Fragment, MessageRole, MessageType } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
-import { ChevronRightIcon, Code2Icon } from "lucide-react";
+import { ChevronRightIcon, Code2Icon, SparklesIcon, BugIcon, PlusCircleIcon, SmartphoneIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface UserMessageProps {
     content: string;
@@ -43,6 +44,53 @@ const FragmentCard = ({ fragments, isActiveFragment, onFragmentClick }: Fragment
         </button>
     )
 }
+interface QuickActionsProps {
+    fragmentTitle: string;
+    onAction: (prompt: string) => void;
+}
+
+const QuickActions = ({ fragmentTitle, onAction }: QuickActionsProps) => {
+    const actions = [
+        {
+            icon: SparklesIcon,
+            label: "Improve Design",
+            prompt: `Improve the visual design and UI of "${fragmentTitle}". Make it more modern, polished, and visually appealing with better colors, spacing, and typography.`
+        },
+        {
+            icon: BugIcon,
+            label: "Fix Issues",
+            prompt: `Review and fix any bugs, errors, or issues in "${fragmentTitle}". Also improve error handling and edge cases.`
+        },
+        {
+            icon: PlusCircleIcon,
+            label: "Add Feature",
+            prompt: `Add a useful new feature to "${fragmentTitle}". Choose something that would enhance the functionality and user experience.`
+        },
+        {
+            icon: SmartphoneIcon,
+            label: "Make Responsive",
+            prompt: `Improve the mobile responsiveness of "${fragmentTitle}". Make sure it looks great and works perfectly on all screen sizes.`
+        }
+    ];
+
+    return (
+        <div className="flex flex-wrap gap-2 mt-2">
+            {actions.map((action) => (
+                <Button
+                    key={action.label}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onAction(action.prompt)}
+                    className="h-7 text-xs"
+                >
+                    <action.icon className="size-3" />
+                    {action.label}
+                </Button>
+            ))}
+        </div>
+    );
+};
+
 interface AssistantMessageProps {
     content: string;
     fragments: Fragment | null;
@@ -50,8 +98,9 @@ interface AssistantMessageProps {
     isActiveFragment: boolean;
     onFragmentClick: (fragment: Fragment) => void;
     type: MessageType;
+    onQuickAction?: (prompt: string) => void;
 }
-const AssistantMessage = ({ content, fragments, createdAt, isActiveFragment, onFragmentClick, type }: AssistantMessageProps) => {
+const AssistantMessage = ({ content, fragments, createdAt, isActiveFragment, onFragmentClick, type, onQuickAction }: AssistantMessageProps) => {
     return (
         <div className={cn(
             "flex flex-col group px-2 pb-4",
@@ -59,7 +108,7 @@ const AssistantMessage = ({ content, fragments, createdAt, isActiveFragment, onF
         )}>
             <div className="flex items-center gap-2 pl-2 mb-2">
                 <Image src="/logo.svg" alt="logo" width={18} height={18} className="shrink-0" />
-                <span className="text-sm font-medium">Vibe</span>
+                <span className="text-sm font-medium">Bloom</span>
                 <span className="text-xs  text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">
                     {format(createdAt, "HH:mm 'on' MMM dd, yyyy")}
                 </span>
@@ -69,11 +118,19 @@ const AssistantMessage = ({ content, fragments, createdAt, isActiveFragment, onF
                 <span>{content}</span>
                 {
                     fragments && type === "RESULT" && (
-                        <FragmentCard
-                            fragments={fragments}
-                            isActiveFragment={isActiveFragment}
-                            onFragmentClick={onFragmentClick}
-                        />
+                        <>
+                            <FragmentCard
+                                fragments={fragments}
+                                isActiveFragment={isActiveFragment}
+                                onFragmentClick={onFragmentClick}
+                            />
+                            {onQuickAction && (
+                                <QuickActions
+                                    fragmentTitle={fragments.title}
+                                    onAction={onQuickAction}
+                                />
+                            )}
+                        </>
                     )
                 }
             </div>
@@ -88,9 +145,10 @@ interface MessageCardProps {
     isActiveFragment: boolean;
     onFragmentClick: (fragment: Fragment) => void;
     type: MessageType;
+    onQuickAction?: (prompt: string) => void;
 }
 
-export const MessageCard = ({ content, role, fragments, createdAt, isActiveFragment, onFragmentClick, type }: MessageCardProps) => {
+export const MessageCard = ({ content, role, fragments, createdAt, isActiveFragment, onFragmentClick, type, onQuickAction }: MessageCardProps) => {
     if (role === "ASSISTANT") {
         return (
             <AssistantMessage
@@ -100,6 +158,7 @@ export const MessageCard = ({ content, role, fragments, createdAt, isActiveFragm
                 isActiveFragment={isActiveFragment}
                 onFragmentClick={onFragmentClick}
                 type={type}
+                onQuickAction={onQuickAction}
             />
         )
     }

@@ -42,7 +42,7 @@ export const MessageLoading = () => {
                     width={18}
                     height={18}
                 />
-                <span className="text-sm font-medium">Vibe</span>
+                <span className="text-sm font-medium">Bloom</span>
             </div>
             <div className="pl-8.5 lex flex-col gap-y-4">
                 <ShimmerMessages />

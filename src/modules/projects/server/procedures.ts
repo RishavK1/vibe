@@ -5,6 +5,54 @@ import {  createTRPCRouter, protectedProcedure } from "@/trpc/init";
 import z from "zod";
 import { TRPCError } from "@trpc/server";
 import { consumeCredits } from "@/lib/usage";
+import { gemini, createAgent } from "@inngest/agent-kit";
+
+async function generateProjectName(userPrompt: string): Promise<string> {
+    try {
+        const nameGenerator = createAgent({
+            name: "project-name-generator",
+            description: "Generates smart project names based on user prompts",
+            system: `You are a project name generator. Generate a short, descriptive project name based on what the user wants to build.
+
+Rules:
+- Max 3 words, preferably 2
+- Use kebab-case (e.g., "calculator-app", "todo-list", "weather-dashboard")
+- Be specific and descriptive
+- No generic names like "my-app" or "new-project"
+- Return ONLY the name, nothing else
+- No quotes or punctuation
+
+Examples:
+User: "build a calculator" → "calculator-app"
+User: "create a todo list with categories" → "todo-manager"
+User: "weather app that shows forecast" → "weather-dashboard"
+User: "Netflix clone" → "netflix-clone"`,
+            model: gemini({ model: "gemini-2.0-flash-exp" }),
+        });
+
+        const result = await nameGenerator.run(userPrompt);
+        
+        // Extract text from the output
+        let projectName = generateSlug(2, { format: "kebab" }); // Fallback
+        if (result.output && result.output.length > 0) {
+            const firstOutput = result.output[0];
+            if (firstOutput.type === "text") {
+                if (typeof firstOutput.content === "string") {
+                    projectName = firstOutput.content.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+                } else if (Array.isArray(firstOutput.content)) {
+                    const text = firstOutput.content.map(c => typeof c === "string" ? c : "").join("");
+                    projectName = text.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+                }
+            }
+        }
+        
+        return projectName;
+    } catch (error) {
+        console.error("Project name generation error:", error);
+        // Fallback to random slug
+        return generateSlug(2, { format: "kebab" });
+    }
+}
 
 export const projectsRouter = createTRPCRouter({
 getOne : protectedProcedure
@@ -70,12 +118,13 @@ getOne : protectedProcedure
                 }
             }
 
+            // Generate smart project name based on user's prompt
+            const projectName = await generateProjectName(input.value);
+
             const createdProject = await prisma.project.create({
                 data :{
                     userId : ctx.auth.userId,
-                    name : generateSlug(2 , {
-                        format : "kebab",
-                    }),
+                    name : projectName,
                     messages :{
                         create:{
                             content : input.value,
@@ -94,5 +143,67 @@ getOne : protectedProcedure
                 }
             })
             return createdProject;
+        }),
+    delete: protectedProcedure
+        .input(
+            z.object({
+                id: z.string().min(1, "Id is required"),
+            })
+        )
+        .mutation(async ({ input, ctx }) => {
+            const existingProject = await prisma.project.findUnique({
+                where: {
+                    id: input.id,
+                    userId: ctx.auth.userId,
+                }
+            });
+
+            if (!existingProject) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Project not found",
+                });
+            }
+
+            await prisma.project.delete({
+                where: {
+                    id: input.id,
+                }
+            });
+
+            return { success: true };
+        }),
+    rename: protectedProcedure
+        .input(
+            z.object({
+                id: z.string().min(1, "Id is required"),
+                name: z.string().min(1, "Name is required").max(100, "Name is too long"),
+            })
+        )
+        .mutation(async ({ input, ctx }) => {
+            const existingProject = await prisma.project.findUnique({
+                where: {
+                    id: input.id,
+                    userId: ctx.auth.userId,
+                }
+            });
+
+            if (!existingProject) {
+                throw new TRPCError({
+                    code: "NOT_FOUND",
+                    message: "Project not found",
+                });
+            }
+
+            const updatedProject = await prisma.project.update({
+                where: {
+                    id: input.id,
+                },
+                data: {
+                    name: input.name,
+                }
+            });
+
+            return updatedProject;
         })
 })

@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import TextAreaAutosize from "react-textarea-autosize";
-import { ArrowUpIcon, Loader2Icon } from "lucide-react";
+import { ArrowUpIcon, Loader2Icon, SparklesIcon } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
@@ -65,6 +65,29 @@ export const ProjectForm = () => {
         });
     }
     const [isFocused, setIsFocused] = useState(false);
+    const [isEnhancing, setIsEnhancing] = useState(false);
+
+    const enhancePrompt = useMutation(trpc.promptEnhancer.enhance.mutationOptions({
+        onSuccess: (data) => {
+            form.setValue("value", data.enhanced);
+            toast.success("Prompt enhanced!");
+            setIsEnhancing(false);
+        },
+        onError: () => {
+            toast.error("Failed to enhance prompt");
+            setIsEnhancing(false);
+        }
+    }));
+
+    const handleEnhance = async () => {
+        const currentValue = form.getValues("value");
+        if (!currentValue.trim()) {
+            toast.error("Please enter a prompt first");
+            return;
+        }
+        setIsEnhancing(true);
+        await enhancePrompt.mutateAsync({ prompt: currentValue });
+    };
 
     const isPending = createProject.isPending;
     const isButtonDisabled = isPending || !form.formState.isValid;
@@ -110,19 +133,36 @@ export const ProjectForm = () => {
                         </kbd>
                         &nbsp;to send
                     </div>
-                    <Button
-                        disabled={isButtonDisabled}
-                        className={cn(
-                            "size-8 rounded-full",
-                            isButtonDisabled && "bg-muted-foreground border"
-                        )}>
-                        {
-                            isPending ?
+                    <div className="flex gap-x-2">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleEnhance}
+                            disabled={isPending || isEnhancing || !form.getValues("value").trim()}
+                            className="size-8 rounded-full"
+                            title="Enhance prompt with AI"
+                        >
+                            {isEnhancing ? (
                                 <Loader2Icon className="size-4 animate-spin" />
-                                :
-                                <ArrowUpIcon className="size-4" />
-                        }
-                    </Button>
+                            ) : (
+                                <SparklesIcon className="size-4" />
+                            )}
+                        </Button>
+                        <Button
+                            disabled={isButtonDisabled}
+                            className={cn(
+                                "size-8 rounded-full",
+                                isButtonDisabled && "bg-muted-foreground border"
+                            )}>
+                            {
+                                isPending ?
+                                    <Loader2Icon className="size-4 animate-spin" />
+                                    :
+                                    <ArrowUpIcon className="size-4" />
+                            }
+                        </Button>
+                    </div>
                 </div>
             </form>
             <div className="flex-wrap justify-center gap-2 hidden md:flex max-w-3xl">

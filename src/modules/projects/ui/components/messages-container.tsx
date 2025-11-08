@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
@@ -17,6 +17,7 @@ export const MessagesContainer = ({ projectId, activeFragment, setActiveFragment
 
     const bottonRef = useRef<HTMLDivElement>(null);
     const lastAssistantMessageIdRef = useRef<string | null>(null);
+    const [quickActionPrompt, setQuickActionPrompt] = useState<string>("");
     const { data: messages } = useSuspenseQuery(trpc.messages.getMany.queryOptions({
         projectId: projectId,
     },{
@@ -42,6 +43,10 @@ export const MessagesContainer = ({ projectId, activeFragment, setActiveFragment
 
     const lastMessage = messages[messages.length - 1];
     const isLastMessageUser = lastMessage?.role === "USER";
+
+    const handleQuickAction = (prompt: string) => {
+        setQuickActionPrompt(prompt);
+    };
     
     return (
         <div className="flex flex-col flex-1 min-h-0">
@@ -58,6 +63,7 @@ export const MessagesContainer = ({ projectId, activeFragment, setActiveFragment
                                 isActiveFragment={activeFragment?.id === message.fragments?.id}
                                 onFragmentClick={() => { setActiveFragment(message.fragments) }}
                                 type={message.type}
+                                onQuickAction={handleQuickAction}
                             />
                         ))
                     }
@@ -68,7 +74,7 @@ export const MessagesContainer = ({ projectId, activeFragment, setActiveFragment
             <div className="relative p-2 pt-1">
                 <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-b from-transparent
                 to-background/70 pointer-events-none" />
-                <MessageForm projectId={projectId} />
+                <MessageForm projectId={projectId} quickActionPrompt={quickActionPrompt} onQuickActionUsed={() => setQuickActionPrompt("")} />
             </div>
         </div>
     )

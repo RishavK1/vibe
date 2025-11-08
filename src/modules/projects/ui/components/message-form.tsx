@@ -3,17 +3,19 @@ import { toast } from "sonner"
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import TextAreaAutosize from "react-textarea-autosize";
-import { ArrowUpIcon, Loader2Icon } from "lucide-react";
+import { ArrowUpIcon, Loader2Icon, SparklesIcon } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Form, FormField } from "@/components/ui/form";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Usage } from "./usage";
 import { useRouter } from "next/navigation";
 interface Props {
     projectId: string;
+    quickActionPrompt?: string;
+    onQuickActionUsed?: () => void;
 }
 
 const formSchema = z.object({
@@ -21,7 +23,7 @@ const formSchema = z.object({
         .min(1, "Message is required")
         .max(10000, "Message is too long"),
 });
-export const MessageForm = ({ projectId }: Props) => {
+export const MessageForm = ({ projectId, quickActionPrompt, onQuickActionUsed }: Props) => {
 
     const trpc = useTRPC();
     const router = useRouter();
@@ -35,6 +37,18 @@ export const MessageForm = ({ projectId }: Props) => {
             value: "",
         },
     });
+
+    // Handle quick action prompt
+    useEffect(() => {
+        if (quickActionPrompt) {
+            form.setValue("value", quickActionPrompt, {
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true,
+            });
+            onQuickActionUsed?.();
+        }
+    }, [quickActionPrompt, form, onQuickActionUsed]);
     const createMessage = useMutation(trpc.messages.create.mutationOptions({
         onSuccess: () => {
             form.reset();
@@ -58,7 +72,30 @@ export const MessageForm = ({ projectId }: Props) => {
         });
     }
     const [isFocused, setIsFocused] = useState(false);
+    const [isEnhancing, setIsEnhancing] = useState(false);
     const showUsage = !!usage;
+
+    const enhancePrompt = useMutation(trpc.promptEnhancer.enhance.mutationOptions({
+        onSuccess: (data) => {
+            form.setValue("value", data.enhanced);
+            toast.success("Prompt enhanced!");
+            setIsEnhancing(false);
+        },
+        onError: () => {
+            toast.error("Failed to enhance prompt");
+            setIsEnhancing(false);
+        }
+    }));
+
+    const handleEnhance = async () => {
+        const currentValue = form.getValues("value");
+        if (!currentValue.trim()) {
+            toast.error("Please enter a prompt first");
+            return;
+        }
+        setIsEnhancing(true);
+        await enhancePrompt.mutateAsync({ prompt: currentValue });
+    };
 
     const isPending = createMessage.isPending;
     const isButtonDisabled = isPending || !form.formState.isValid;
@@ -107,19 +144,36 @@ export const MessageForm = ({ projectId }: Props) => {
                         </kbd>
                         &nbsp;to send
                     </div>
-                    <Button
-                        disabled={isButtonDisabled}
-                        className={cn(
-                            "size-8 rounded-full",
-                            isButtonDisabled && "bg-muted-foreground border"
-                        )}>
-                        {
-                            isPending ?
+                    <div className="flex gap-x-2">
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={handleEnhance}
+                            disabled={isPending || isEnhancing || !form.getValues("value").trim()}
+                            className="size-8 rounded-full"
+                            title="Enhance prompt with AI"
+                        >
+                            {isEnhancing ? (
                                 <Loader2Icon className="size-4 animate-spin" />
-                                :
-                                <ArrowUpIcon className="size-4" />
-                        }
-                    </Button>
+                            ) : (
+                                <SparklesIcon className="size-4" />
+                            )}
+                        </Button>
+                        <Button
+                            disabled={isButtonDisabled}
+                            className={cn(
+                                "size-8 rounded-full",
+                                isButtonDisabled && "bg-muted-foreground border"
+                            )}>
+                            {
+                                isPending ?
+                                    <Loader2Icon className="size-4 animate-spin" />
+                                    :
+                                    <ArrowUpIcon className="size-4" />
+                            }
+                        </Button>
+                    </div>
                 </div>
             </form>
         </Form>

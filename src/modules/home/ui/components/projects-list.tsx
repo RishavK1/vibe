@@ -1,50 +1,37 @@
 "use client"
 
-import Link from "next/link"
-import Image from "next/image"
-
-import { formatDistanceToNow } from "date-fns"
 import { useQuery } from "@tanstack/react-query"
 import { useTRPC } from "@/trpc/client"
-import { Button } from "@/components/ui/button"
 import { useUser } from "@clerk/nextjs"
+import { ProjectCard } from "./project-card"
+import { ProjectListSkeleton } from "./project-skeleton"
 
 export const ProjectsList = () => {
 
     const trpc = useTRPC();
     const {user} = useUser();
-    const { data: projects } = useQuery(trpc.projects.getMany.queryOptions());
+    const { data: projects, isLoading } = useQuery(trpc.projects.getMany.queryOptions());
 
     if(!user) return null;
+    
+    if(isLoading) {
+        return <ProjectListSkeleton />
+    }
     return (
         <div
-            className="w-full bg-white dark:bg-sidebar rounded-xl p-8 border flex flex-col gap-y-6 sm:gap-y-4"
+            className="w-full bg-white dark:bg-sidebar rounded-xl p-4 sm:p-6 md:p-8 border flex flex-col gap-y-4 sm:gap-y-6"
         >
-            <h2 className="text-2xl font-semibold">{user?.firstName}&apos;s Projects</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <h2 className="text-xl sm:text-2xl font-semibold">{user?.firstName}&apos;s Projects</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {
                     projects?.length === 0 && (
-                        <div className="col-span-full text-center">
-                            <p className="text-sm text-muted-foreground">No projects found</p>
+                        <div className="col-span-full text-center py-12">
+                            <p className="text-sm text-muted-foreground">No projects yet. Create your first one above!</p>
                         </div>
                     )
                 }
                 {projects?.map((project) => (
-                    <Button key={project.id}
-                        variant="outline"
-                        className="font-normal h-auto justify-start w-full text-start p-4"
-                        asChild
-                    >
-                        <Link href={`/projects/${project.id}`}>
-                            <div className="flex items-center gap-x-4">
-                                <Image src="/logo.svg" alt="Logo" width={32} height={32} className="object-contain" />
-                                <div className="flex flex-col">
-                                    <h3 className="truncate font-medium">{project.name}</h3>
-                                    <p className="text-sm text-muted-foreground">{formatDistanceToNow(project.updatedAt, { addSuffix: true })}</p>
-                                </div>
-                            </div>
-                        </Link>
-                    </Button>
+                    <ProjectCard key={project.id} project={project} />
                 ))}
             </div>
         </div>
