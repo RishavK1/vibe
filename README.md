@@ -11,7 +11,6 @@ Bloom is an AI-powered code generation platform that transforms natural language
 ### 🤖 AI-Powered Code Generation
 - **Conversational Interface** - Chat naturally with AI to build apps
 - **Multi-Agent System** - Powered by Inngest Agent Kit with Google Gemini
-- **Smart Project Naming** - AI generates relevant project names (no more "fuzzy-potato")
 - **Prompt Enhancement** - One-click AI prompt improvement for better results
 
 ### 🎨 Modern Developer Experience
