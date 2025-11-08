@@ -15,7 +15,7 @@ import {
 
 import { MessagesContainer } from "../components/messages-container";
 import { Suspense, useState } from "react";
-import { Fragment } from "@/generated/prisma/client";
+import { Fragment } from "@prisma/client";
 import { ProjectHeader } from "../components/project-header";
 import { FragmentWeb } from "../components/fragment-web";
 import { Button } from "@/components/ui/button";

@@ -40,9 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Prisma - keep generated files for Vercel deployment
-# /src/generated/prisma
-
 # inngest
 .inngest/
 
