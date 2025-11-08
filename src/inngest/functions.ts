@@ -10,7 +10,6 @@ import { inngest } from "./client";
 import { getSandbox, lastAssistantTextMessageContent } from "./utils";
 import { FRAGMENT_TITLE_PROMPT, PROMPT, RESPONSE_PROMPT } from "@/prompt";
 import { prisma } from "@/lib/db";
-import { fr } from "date-fns/locale";
 
 interface AgentState {
   summary: string;
@@ -70,7 +69,7 @@ export const codeAgentFunction = inngest.createFunction(
           description: "Use the terminal to run commands",
           parameters: z.object({
             command: z.string(),
-          }) as any,
+          }),
           handler: async ({ command }, { step }) => {
             return await step?.run("terminal", async () => {
               const buffers = { stdout: "", stderr: "" };
@@ -104,7 +103,7 @@ export const codeAgentFunction = inngest.createFunction(
                 content: z.string(),
               }),
             ),
-          }) as any,
+          }),
           handler: async ({ files }, { step, network }: Tool.Options<AgentState>) => {
             const newFiles = await step?.run("CreateOrUpdateFiles", async () => {
               try {
@@ -130,7 +129,7 @@ export const codeAgentFunction = inngest.createFunction(
           description: "Read files from the sandbox",
           parameters: z.object({
             files: z.array(z.string()),
-          }) as any,
+          }),
           handler: async ({ files }, { step, }) => {
             return await step?.run("read_files", async () => {
               try {
